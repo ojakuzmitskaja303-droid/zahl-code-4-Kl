@@ -1,0 +1,155 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Zahlendetektive – Genially 16:9</title>
+<style>
+:root{--yellow:#ffc928;--ink:#0f2f74}
+*{box-sizing:border-box}
+html,body{margin:0;width:100%;height:100%;overflow:hidden}
+body{
+  font-family:"Trebuchet MS",Arial,sans-serif;
+  background:
+    radial-gradient(circle at 20% 15%,rgba(64,220,255,.35),transparent 24%),
+    radial-gradient(circle at 80% 10%,rgba(255,218,70,.25),transparent 22%),
+    linear-gradient(135deg,#1d2870 0%,#253e98 42%,#6b4ec7 100%);
+  color:#fff;
+}
+.screen{width:100%;height:100%;display:flex;align-items:center;justify-content:center;padding:10px}
+.panel{
+  width:100%;height:100%;border-radius:28px;
+  background:linear-gradient(180deg,rgba(255,255,255,.12),rgba(255,255,255,.06));
+  border:2px solid rgba(255,255,255,.28);
+  box-shadow:0 16px 36px rgba(0,0,0,.25);
+  position:relative;overflow:hidden;
+}
+.topbar{display:flex;align-items:center;justify-content:space-between;padding:14px 20px 5px;gap:12px}
+.title{font-size:clamp(24px,3vw,44px);font-weight:900}
+.title span{color:var(--yellow)}
+.badge{
+  background:rgba(255,255,255,.12);border:1.5px solid rgba(255,255,255,.24);
+  padding:8px 12px;border-radius:16px;font-weight:800;font-size:clamp(12px,1.4vw,18px)
+}
+.instructions{text-align:center;font-size:clamp(16px,1.8vw,23px);margin:0 16px 6px}
+.card-wrap{perspective:1400px;width:min(720px,78%);height:48%;margin:8px auto 6px}
+.card{
+  width:100%;height:100%;position:relative;transform-style:preserve-3d;
+  transition:transform .7s cubic-bezier(.2,.75,.25,1);cursor:pointer
+}
+.card.flipped{transform:rotateY(180deg)}
+.face{
+  position:absolute;inset:0;border-radius:30px;backface-visibility:hidden;
+  display:flex;align-items:center;justify-content:center;text-align:center;padding:26px;
+  border:5px solid rgba(255,255,255,.92);box-shadow:0 12px 32px rgba(0,0,0,.22)
+}
+.front{background:linear-gradient(145deg,#49e0ff,#2b73ff 55%,#694cff)}
+.back{transform:rotateY(180deg);background:linear-gradient(145deg,#fff8bf,#ffd24d 58%,#ffb227);color:var(--ink)}
+.number{font-size:clamp(90px,14vw,180px);font-weight:1000;line-height:1}
+.word-wrap{width:100%;height:100%;display:flex;align-items:center;justify-content:center;overflow:hidden}
+.word{display:inline-block;white-space:nowrap;font-size:82px;font-weight:1000;line-height:1;text-align:center}
+.hint{text-align:center;font-size:clamp(13px,1.3vw,17px);opacity:.8}
+.controls{display:flex;justify-content:center;align-items:center;gap:10px;margin:10px 16px 0;flex-wrap:wrap}
+button{
+  border:0;border-radius:16px;padding:10px 18px;font:inherit;font-weight:900;color:#0f3280;
+  background:linear-gradient(#fff9c9,#ffd83a);box-shadow:0 4px 0 #d79a00,0 7px 16px rgba(0,0,0,.16);cursor:pointer
+}
+button:active{transform:translateY(2px);box-shadow:0 2px 0 #d79a00}
+.counter{min-width:120px;text-align:center;font-weight:900;font-size:18px}
+.dots{position:absolute;left:20px;right:20px;bottom:8px;display:flex;justify-content:center;gap:7px}
+.dot{width:9px;height:9px;border-radius:50%;background:rgba(255,255,255,.28)}
+.dot.active{background:var(--yellow);transform:scale(1.2)}
+@media(max-height:520px){
+  .topbar{padding-top:8px}
+  .card-wrap{height:44%}
+  .controls{margin-top:6px}
+  button{padding:8px 14px}
+  .dots{display:none}
+}
+</style>
+</head>
+<body>
+<div class="screen">
+  <div class="panel">
+    <div class="topbar">
+      <div class="title">🔎 Zahlen<span>detektive</span></div>
+      <div class="badge">Mission 1 · Code ZAHLEN</div>
+    </div>
+
+    <div class="instructions">Lies die Zahl. Klicke auf die Karte und überprüfe die Schreibweise.</div>
+
+    <div class="card-wrap">
+      <div class="card" id="card" role="button" tabindex="0">
+        <div class="face front"><div class="number" id="number">37</div></div>
+        <div class="face back">
+          <div class="word-wrap"><div class="word" id="word">siebenunddreißig</div></div>
+        </div>
+      </div>
+    </div>
+
+    <div class="hint">Klick auf die Karte ↻</div>
+
+    <div class="controls">
+      <button id="prev">◀ Zurück</button>
+      <div class="counter" id="counter"></div>
+      <button id="next">Weiter ▶</button>
+      <button id="shuffle">🔀 Mischen</button>
+    </div>
+
+    <div class="dots" id="dots"></div>
+  </div>
+</div>
+
+<script>
+const original=[
+[37,"siebenunddreißig"],[50,"fünfzig"],[62,"zweiundsechzig"],[111,"einhundertelf"],
+[48,"achtundvierzig"],[73,"dreiundsiebzig"],[39,"neununddreißig"],[74,"vierundsiebzig"],
+[21,"einundzwanzig"],[56,"sechsundfünfzig"],[83,"dreiundachtzig"],[99,"neunundneunzig"]
+];
+let items=[...original],index=0;
+const card=document.getElementById("card"),number=document.getElementById("number"),
+word=document.getElementById("word"),counter=document.getElementById("counter"),dots=document.getElementById("dots");
+
+function drawDots(){
+  dots.innerHTML="";
+  items.forEach((_,i)=>{const d=document.createElement("span");d.className="dot"+(i===index?" active":"");dots.appendChild(d);});
+}
+function fitWord(){
+  const max=word.parentElement.clientWidth-16;
+  let size=86;
+  word.style.fontSize=size+"px";
+  word.style.transform="scaleX(1)";
+  word.style.letterSpacing="0";
+  while(word.scrollWidth>max && size>22){size-=2;word.style.fontSize=size+"px";}
+  if(word.scrollWidth>max){
+    const s=Math.max(.68,max/word.scrollWidth);
+    word.style.transform="scaleX("+s+")";
+    word.style.transformOrigin="center";
+  }
+}
+function render(){
+  card.classList.remove("flipped");
+  number.textContent=items[index][0];
+  word.textContent=items[index][1];
+  counter.textContent=(index+1)+" / "+items.length;
+  drawDots();
+  requestAnimationFrame(fitWord);
+}
+function flip(){card.classList.toggle("flipped");if(card.classList.contains("flipped"))requestAnimationFrame(fitWord);}
+card.onclick=flip;
+card.onkeydown=e=>{if(e.key==="Enter"||e.key===" "){e.preventDefault();flip();}};
+document.getElementById("next").onclick=()=>{index=(index+1)%items.length;render();};
+document.getElementById("prev").onclick=()=>{index=(index-1+items.length)%items.length;render();};
+document.getElementById("shuffle").onclick=()=>{
+  for(let i=items.length-1;i>0;i--){const j=Math.floor(Math.random()*(i+1));[items[i],items[j]]=[items[j],items[i]];}
+  index=0;render();
+};
+document.addEventListener("keydown",e=>{
+  if(e.key==="ArrowRight"){index=(index+1)%items.length;render();}
+  if(e.key==="ArrowLeft"){index=(index-1+items.length)%items.length;render();}
+});
+window.addEventListener("resize",fitWord);
+render();
+</script>
+</body>
+</html>
